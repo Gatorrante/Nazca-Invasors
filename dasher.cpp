@@ -2,19 +2,20 @@
 
 //---------------------------------------------------------------------------------
 // Definiciones
-//----------------------------------------------------------------------------------
-#define NUM_SHOOTS 50
-#define NUM_MAX_ENEMIES 50
-#define FIRST_WAVE 10
-#define SECOND_WAVE 20
-#define THIRD_WAVE 30
-#define FOURTH_WAVE 40
-#define FIFTH_WAVE 50
+///////////////////////////////////////////////////////////////
+#define CANTIDAD_DISPAROS 50
+#define ENEMIGOS_MAXIMOS 50
+///////////////////////////////////////////////////////////////
+#define PRIMERA_RONDA 10
+#define SEGUNDA_RONDA 20
+#define TERCERA_RONDA 30
+#define CUARTA_RONDA 40
+#define QUINTA_RONDA 50
+//////////////////////////////////////////
 
-//----------------------------------------------------------------------------------
-// Types and Structures Definition
-//----------------------------------------------------------------------------------
-typedef enum { FIRST = 0, SECOND, THIRD, FOURTH, FIFTH } EnemyWave;
+//Definición de tipos y estructuras
+
+typedef enum { PRIMERO = 0, SEGUNDO, TERCERO, CUARTO, QUINTO } RondaEnemiga;
 
 typedef struct level1sound{
     Sound nivel1;
@@ -40,27 +41,32 @@ typedef struct victoriasound{
     Sound victoria;
 } victoriasound;
 
+typedef struct golpeSound{
+    Sound golpe;
+} golpeSound;
+
 typedef struct Player{
     Texture2D nave;
     Rectangle rec;
-    Vector2 speed;
+    Vector2 vel;
     Color color;
 } Player;
 
 typedef struct Enemy{
+    Texture2D enemigo;
     Rectangle rec;
-    Vector2 speed;
+    Vector2 vel;
     bool active;
     Color color;
 } Enemy;
 
-typedef struct Shoot{
+typedef struct Disparo{
     Rectangle rec;
-    Vector2 speed;
+    Vector2 vel;
     bool active;
     Color color;
     Sound sound;
-} Shoot;
+} Disparo;
 
 //FONDOS DEL JUEGO//
 typedef struct fondo1{
@@ -75,22 +81,21 @@ typedef struct fondo3{
     Texture2D fondo3;
 } fondo3;
 
-///
-//------------------------------------------------------------------------------------
-// Global Variables Declaration
+
+// VARIALES GLOBALES
 //------------------------------------------------------------------------------------
 static const int screenWidth = 1280;
 static const int screenHeight = 720;
-
+/// //
 static bool gameOver = false;
-static bool pause =  false;
+static bool pausa =  false;
 static int score = 0;
 static bool victory = false;
 
 static Player player = { 0 };
-static Enemy enemy[NUM_MAX_ENEMIES] = { 0 };
-static Shoot shoot[NUM_SHOOTS] = { 0 };
-static EnemyWave wave = { wave};
+static Enemy enemy[ENEMIGOS_MAXIMOS] = { 0 };
+static Disparo disparo[CANTIDAD_DISPAROS] = { 0 };
+static RondaEnemiga ronda = { ronda};
 
 /// //Declarando sonidos////
 static level1sound sonido1 = {sonido1};
@@ -98,6 +103,7 @@ static level2sound sonido2 = {sonido2};
 static level3sound sonido3={sonido3};
 static level4sound sonido4={sonido4};
 static level5sound sonido5={sonido5};
+static golpeSound golpe={golpe};
 static victoriasound victoria={victoria};
 
 //Declarando fondos 
@@ -105,12 +111,12 @@ static fondo1 fondoa={fondoa};
 static fondo2 fondob={fondob};
 static fondo3 fondoc={fondoc};
 
-static int shootRate = 0;
-static float alpha = 0.0f;
+static int alcance = 0;
+static float contador = 0.0f;
 
-static int activeEnemies = 0;
+static int EnemigosActivos = 0;
 static int enemiesKill = 0;
-static bool smooth = false;
+static bool activador = false;
 
 //Scroll del fondo//
 float scrollingBack = 0.0f;
@@ -118,61 +124,53 @@ float scrollingBack = 0.0f;
     float scrollingFore = 0.0f;
 
 
+// DECLARACION DE FUNCIONES 
 
-//------------------------------------------------------------------------------------
-// Module Functions Declaration (local)
-//------------------------------------------------------------------------------------
-static void InitGame(void);         // Initialize game
-static void UpdateGame(void);       // Update game (one frame)
-static void DrawGame(void);         // Draw game (one frame)
-static void UnloadGame(void);       // Unload game
-static void UpdateDrawFrame(void);  // Update and Draw (one frame)
+static void InitGame(void);         
+static void UpdateGame(void);     
+static void DrawGame(void);       
+static void UnloadGame(void);       
+static void UpdateDrawFrame(void);  
 
-//------------------------------------------------------------------------------------
-// Program main entry point
-//------------------------------------------------------------------------------------
+// El Main
 int main(void)
 {
-    // Initialization (Note windowTitle is unused on Android)
-    //---------------------------------------------------------
-    InitWindow(screenWidth, screenHeight, "Nazca");
+    InitWindow(screenWidth, screenHeight, "Nazca Invaders");
     InitAudioDevice();
     InitGame();
+
    //Sonido del juego//
     PlaySound(sonido1.nivel1);
-
     
-
-#if defined(PLATFORM_WEB)
-    emscripten_set_main_loop(UpdateDrawFrame, 60, 1);
-#else
+    //frames por segundo del juego
     SetTargetFPS(60);
     //--------------------------------------------------------------------------------------
 
-    // Main game loop
-    while (!WindowShouldClose())    // Detect window close button or ESC key
+    // loop del juego
+    while (!WindowShouldClose())    
     {
-        // Update and Draw
-        //----------------------------------------------------------------------------------
+     
+        //Mostrar el movimiento del fondo
         UpdateDrawFrame();
         scrollingBack -= 0.1f;
         scrollingMid -= 0.5f;
         scrollingFore -= 1.0f;
 
-        // NOTE: Texture is scaled twice its size, so it sould be considered on scrolling
+        
+
+        // La textura se escala 2 veces
         if (scrollingBack <= -fondoa.fondo1.width*2) scrollingBack = 0;
         if (scrollingMid <= -fondob.fondo2.width*2) scrollingMid = 0;
         if (scrollingFore <= -fondoc.fondo3.width*2) scrollingFore = 0;
         //----------------------------------------------------------------------------------
     }
-#endif
-    // De-Initialization
+
     //--------------------------------------------------------------------------------------
-    
-    UnloadGame();         // Unload loaded data (textures, sounds, models...)
+    //CARGA DE ARCHIVOS
+    UnloadGame();         
     CloseAudioDevice();
 
-    CloseWindow();        // Close window and OpenGL context
+    CloseWindow();        
     
     //--------------------------------------------------------------------------------------
 
@@ -183,7 +181,7 @@ int main(void)
    
 //------------------------------------------------------------------------------------
 
-// Initialize game variables
+// Iniciar variables
 void InitGame(void)
 {
 
@@ -191,6 +189,7 @@ void InitGame(void)
     fondoa.fondo1 = LoadTexture("textures/fondo.png");
     fondob.fondo2 = LoadTexture("textures/medio.png");
     fondoc.fondo3 = LoadTexture("textures/frente.png");
+    
 
   
 
@@ -200,206 +199,212 @@ void InitGame(void)
 
     //sonidos
 
-    sonido1.nivel1 = LoadSound("sounds/chillpenguin.wav");
+    sonido1.nivel1 = LoadSound("sounds/nivel1.mp3");
     sonido2.nivel2 = LoadSound("sounds/nivel2.mp3");
     sonido3.nivel3 = LoadSound("sounds/nivel3.mp3");
     sonido4.nivel4 = LoadSound("sounds/Nivel4.mp3");
     sonido5.nivel5 = LoadSound("sounds/Nivel5.mp3");
+    golpe.golpe = LoadSound("sounds/Golpe.mp3");
     victoria.victoria = LoadSound("sounds/Victoria.mp3");
 
-    // Initialize game variables
-    shootRate = 0;
-    pause = false;
+    // Iniciar variables de juegos
+    alcance = 0;
+    pausa = false;
     gameOver = false;
     victory = false;
-    smooth = false;
-    wave = FIRST;
-    activeEnemies = FIRST_WAVE;
+    activador = false;
+    ronda = PRIMERO;
+    EnemigosActivos = PRIMERA_RONDA;
     enemiesKill = 0;
     score = 0;
-    alpha = 0;
+    contador = 0;
 
-    // Initialize player
-    player.nave = LoadTexture("textures/naranja.png");
+    // Inicializador jugador
+    player.nave = LoadTexture("textures/gallito.png");
     player.rec.x =  20;
     player.rec.y = 340;
     player.rec.width = player.nave.width;
     player.rec.height = player.nave.height;
-    player.speed.x = 5;
-    player.speed.y = 5; 
+    player.vel.x = 5;
+    player.vel.y = 5; 
     player.color = WHITE;
 
-    // Initialize enemies
-    for (int i = 0; i < NUM_MAX_ENEMIES; i++)
+    // Inicializador de enemigos
+    for (int i = 0; i < ENEMIGOS_MAXIMOS; i++)
     {
 
-        enemy[i].rec.width = 10;
-        enemy[i].rec.height = 10;
+        enemy[i].enemigo = LoadTexture("textures/textura.png");
+        enemy[i].rec.width = enemy[i].enemigo.width;
+        enemy[i].rec.height = enemy[i].enemigo.height;
         enemy[i].rec.x = GetRandomValue(screenWidth, screenWidth + 1000);
         enemy[i].rec.y = GetRandomValue(0, screenHeight - enemy[i].rec.height);
-        enemy[i].speed.x = 5;
-        enemy[i].speed.y = 5;
+        enemy[i].vel.x = 5;
+        enemy[i].vel.y = 5;
+        enemy[i].color = WHITE;
         enemy[i].active = true;
-        enemy[i].color = GRAY;
+       
+        
     }
 
-    // Initialize shoots
+    // Inicializador de disparos
     
-    for (int i = 0; i < NUM_SHOOTS; i++)
+    for (int i = 0; i < CANTIDAD_DISPAROS; i++)
     {
-        shoot[i].sound = LoadSound("sounds/shot.wav");
-        shoot[i].rec.x = player.rec.x;
-        shoot[i].rec.y = player.rec.y + player.rec.height/4;
-        shoot[i].rec.width = 10;
-        shoot[i].rec.height = 5;
-        shoot[i].speed.x = 7;
-        shoot[i].speed.y = 0;
-        shoot[i].active = false;
-        shoot[i].color = BLUE;
-    }
 
-   
+        disparo[i].sound = LoadSound("sounds/shot.wav");
+        disparo[i].rec.x = player.rec.x;
+        disparo[i].rec.y = player.rec.y + player.rec.height/4;
+        disparo[i].rec.width = 10;
+        disparo[i].rec.height = 5;
+        disparo[i].vel.x = 7;
+        disparo[i].vel.y = 0;
+        disparo[i].active = false;
+        disparo[i].color = BLUE;
+    }
+    
+    ///////////////////////////////////////////////////////// /////
+
    
 
     
 }
 
  
-
-// Update game (one frame)
 void UpdateGame(void)
 {
-
-     
-
-    
     if (!gameOver)
     {
         
         
-        if (IsKeyPressed('Z')) pause = !pause;
+        
+        if (IsKeyPressed('Z')) pausa = !pausa;
 
-        if (!pause)
+        if (!pausa)
         {
-            switch (wave)
+           
+            
+            switch (ronda)
             {
-                case FIRST:
+                case PRIMERO:
                 {
                    
-                    if (!smooth)
+                    if (!activador) //Regresa la logica a activador, resetea a 0
                     {
-                        alpha += 0.02f;
+                        contador += 0.02f; //Agrega y asigna 0.02 decimales a alpha
 
-                        if (alpha >= 1.0f) smooth = true;
+                        if (contador >= 1.0f)  //si este llega a 1.0 entonces acctivador = verdadero
+                        activador = true; 
                     }
 
-                    if (smooth) alpha -= 0.02f;
+                    if (activador) contador -= 0.02f; //Si activador es activo entonces a contador se le va restando 0.02f
 
-                    if (enemiesKill == activeEnemies)
+                    if (enemiesKill == EnemigosActivos) //Si enemieskill es equivalente a enemigos activos es decir a 0
+                    {
+                        enemiesKill = 0; //entonces enemieskill =0
+
+                        for (int i = 0; i < EnemigosActivos; i++) //entonces aparecen mas
+                        {
+                            if (!enemy[i].active)   //regresa la logica al estado de enemigos para activarlos con true.
+                            enemy[i].active = true;
+                        }
+
+                        EnemigosActivos = SEGUNDA_RONDA;
+                        ronda = SEGUNDO;
+                        activador = false;
+                        contador = 0.0f;
+                    }
+                } break;
+                case SEGUNDO:
+                {
+                    if (!activador)
+                    {
+                        contador += 0.02f;
+
+                        if (contador >= 1.0f) activador = true;
+                    }
+
+                    if (activador) contador -= 0.02f;
+
+                    if (enemiesKill == EnemigosActivos)
                     {
                         enemiesKill = 0;
 
-                        for (int i = 0; i < activeEnemies; i++)
+                        for (int i = 0; i < EnemigosActivos; i++)
+                        {
+                            if (!enemy[i].active) 
+                            enemy[i].active = true;
+                        }
+
+                        EnemigosActivos = TERCERA_RONDA;
+                        ronda = TERCERO;
+                        activador = false;
+                        contador = 0.0f;
+                    }
+                } break;
+                case TERCERO:
+                {
+                    if (!activador)
+                    {
+                        contador += 0.02f;
+
+                        if (contador >= 1.0f) activador = true;
+                    }
+
+                    if (activador) contador -= 0.02f;
+
+                    if (enemiesKill == EnemigosActivos)
+                    {
+                        enemiesKill = 0;
+
+                        for (int i = 0; i < EnemigosActivos; i++)
                         {
                             if (!enemy[i].active) enemy[i].active = true;
                         }
 
-                        activeEnemies = SECOND_WAVE;
-                        wave = SECOND;
-                        smooth = false;
-                        alpha = 0.0f;
+                        EnemigosActivos = CUARTA_RONDA;
+                        ronda = CUARTO;
+                        activador = false;
+                        contador = 0.0f;
                     }
                 } break;
-                case SECOND:
+                case CUARTO:
                 {
-                    if (!smooth)
+                    if (!activador)
                     {
-                        alpha += 0.02f;
+                        contador += 0.02f;
 
-                        if (alpha >= 1.0f) smooth = true;
+                        if (contador >= 1.0f) activador = true;
                     }
 
-                    if (smooth) alpha -= 0.02f;
+                    if (activador) contador -= 0.02f;
 
-                    if (enemiesKill == activeEnemies)
+                    if (enemiesKill == EnemigosActivos)
                     {
                         enemiesKill = 0;
 
-                        for (int i = 0; i < activeEnemies; i++)
+                        for (int i = 0; i < EnemigosActivos; i++)
                         {
                             if (!enemy[i].active) enemy[i].active = true;
                         }
 
-                        activeEnemies = THIRD_WAVE;
-                        wave = THIRD;
-                        smooth = false;
-                        alpha = 0.0f;
+                        EnemigosActivos = QUINTA_RONDA;
+                        ronda = QUINTO;
+                        activador = false;
+                        contador = 0.0f;
                     }
                 } break;
-                case THIRD:
+                case QUINTO:
                 {
-                    if (!smooth)
+                    if (!activador)
                     {
-                        alpha += 0.02f;
+                        contador += 0.02f;
 
-                        if (alpha >= 1.0f) smooth = true;
+                        if (contador >= 1.0f) activador = true;
                     }
 
-                    if (smooth) alpha -= 0.02f;
+                    if (activador) contador -= 0.02f;
 
-                    if (enemiesKill == activeEnemies)
-                    {
-                        enemiesKill = 0;
-
-                        for (int i = 0; i < activeEnemies; i++)
-                        {
-                            if (!enemy[i].active) enemy[i].active = true;
-                        }
-
-                        activeEnemies = FOURTH_WAVE;
-                        wave = FOURTH;
-                        smooth = false;
-                        alpha = 0.0f;
-                    }
-                } break;
-                case FOURTH:
-                {
-                    if (!smooth)
-                    {
-                        alpha += 0.02f;
-
-                        if (alpha >= 1.0f) smooth = true;
-                    }
-
-                    if (smooth) alpha -= 0.02f;
-
-                    if (enemiesKill == activeEnemies)
-                    {
-                        enemiesKill = 0;
-
-                        for (int i = 0; i < activeEnemies; i++)
-                        {
-                            if (!enemy[i].active) enemy[i].active = true;
-                        }
-
-                        activeEnemies = FIFTH_WAVE;
-                        wave = FIFTH;
-                        smooth = false;
-                        alpha = 0.0f;
-                    }
-                } break;
-                case FIFTH:
-                {
-                    if (!smooth)
-                    {
-                        alpha += 0.02f;
-
-                        if (alpha >= 1.0f) smooth = true;
-                    }
-
-                    if (smooth) alpha -= 0.02f;
-
-                    if (enemiesKill == activeEnemies){
+                    if (enemiesKill == EnemigosActivos){
                      PlaySound(victoria.victoria);
                      victory = true;
                      
@@ -409,28 +414,31 @@ void UpdateGame(void)
             }
 
             // Movimiento del jugador
-            if (IsKeyDown(KEY_RIGHT)) player.rec.x += player.speed.x;
-            if (IsKeyDown(KEY_LEFT)) player.rec.x -= player.speed.x;
-            if (IsKeyDown(KEY_UP)) player.rec.y -= player.speed.y;
-            if (IsKeyDown(KEY_DOWN)) player.rec.y += player.speed.y;
+            if (IsKeyDown(KEY_RIGHT)) player.rec.x += player.vel.x;
+            if (IsKeyDown(KEY_LEFT)) player.rec.x -= player.vel.x;
+            if (IsKeyDown(KEY_UP)) player.rec.y -= player.vel.y;
+            if (IsKeyDown(KEY_DOWN)) player.rec.y += player.vel.y;
 
-            // Colisión con el enemigo
-            for (int i = 0; i < activeEnemies; i++)
+            // colision
+            for (int i = 0; i < EnemigosActivos; i++)
             {
                 if (CheckCollisionRecs(player.rec, enemy[i].rec)) gameOver = true;
             }
 
-             // Ia de los enemigos
-            for (int i = 0; i < activeEnemies; i++)
+             // Comportamiento del enemigo
+            for (int i = 0; i < EnemigosActivos; i++)
             {
                 if (enemy[i].active)
                 {
-                    enemy[i].rec.x -= enemy[i].speed.x;
+                    
+                    enemy[i].rec.x -= enemy[i].vel.x; //suma y asigna posición x al enemigo
 
                     if (enemy[i].rec.x < 0)
                     {
+                       
                         enemy[i].rec.x = GetRandomValue(screenWidth, screenWidth + 1000);
                         enemy[i].rec.y = GetRandomValue(0, screenHeight - enemy[i].rec.height);
+                        
                     }
                 }
             }
@@ -444,49 +452,54 @@ void UpdateGame(void)
             // Disparos
             if (IsKeyDown(KEY_SPACE))
             {
-                PlaySound(shoot->sound);
-                shootRate += 5;
+                
+                PlaySound(disparo->sound);
+                alcance += 5;
+          
 
 
-                for (int i = 0; i < NUM_SHOOTS; i++)
+                for (int i = 0; i < CANTIDAD_DISPAROS; i++)
                 {
-                    if (!shoot[i].active && shootRate%20 == 0)
+                    if (!disparo[i].active && alcance%20 == 0) //equivalente
                     {
-                        shoot[i].rec.x = player.rec.x;
-                        shoot[i].rec.y = player.rec.y + player.rec.height/4;
-                        shoot[i].active = true;
+                        disparo[i].rec.x = player.rec.x+107;
+                        disparo[i].rec.y = player.rec.y + player.rec.height/2;
+                        disparo[i].active = true;
                         break;
                     }
                 }
             }
 
             // Logica del disparo
-            for (int i = 0; i < NUM_SHOOTS; i++)
+            for (int i = 0; i < CANTIDAD_DISPAROS; i++)
             {
-                if (shoot[i].active)
+                if (disparo[i].active)
                 {
-                    // Movement
-                    shoot[i].rec.x += shoot[i].speed.x;
+
+                    // movimiento
+                    
+                    disparo[i].rec.x += disparo[i].vel.x;
 
                     // Colision
-                    for (int j = 0; j < activeEnemies; j++)
+                    for (int j = 0; j < EnemigosActivos; j++)
                     {
                         if (enemy[j].active)
                         {
-                            if (CheckCollisionRecs(shoot[i].rec, enemy[j].rec))
+                            if (CheckCollisionRecs(disparo[i].rec, enemy[j].rec))
                             {
-                                shoot[i].active = false;
+                               PlaySound(golpe.golpe);
+                                disparo[i].active = false;
                                 enemy[j].rec.x = GetRandomValue(screenWidth, screenWidth + 1000);
                                 enemy[j].rec.y = GetRandomValue(0, screenHeight - enemy[j].rec.height);
-                                shootRate = 0;
+                                alcance = 0;
                                 enemiesKill++;
                                 score += 100;
                             }
 
-                            if (shoot[i].rec.x + shoot[i].rec.width >= screenWidth)
+                            if (disparo[i].rec.x + disparo[i].rec.width >= screenWidth)
                             {
-                                shoot[i].active = false;
-                                shootRate = 0;
+                                disparo[i].active = false;
+                                alcance = 0;
                             }
                         }
                     }
@@ -520,11 +533,14 @@ void DrawGame(void)
     
     
     BeginDrawing();
-
+         
+    
      // Draw background image twice
             // NOTE: Texture is scaled twice its size
+            
             DrawTextureEx(fondoa.fondo1, (Vector2){ scrollingBack, 20 }, 0.0f, 2.0f, WHITE);
             DrawTextureEx(fondoa.fondo1, (Vector2){ fondoa.fondo1.width*2 + scrollingBack, 20 }, 0.0f, 2.0f, WHITE);
+            
 
             // Draw midground image twice
             DrawTextureEx(fondob.fondo2, (Vector2){ scrollingMid, 20 }, 0.0f, 2.0f, WHITE);
@@ -535,53 +551,59 @@ void DrawGame(void)
             DrawTextureEx(fondoc.fondo3, (Vector2){ fondoc.fondo3.width*2 + scrollingFore, 70 }, 0.0f, 2.0f, WHITE);
 
          
-            DrawText("Miñano Lavado Diego Alonso", screenWidth - 180, screenHeight - 20, 10, RAYWHITE);
+            DrawText("Diego Alonso Miñano Lavado", screenWidth - 180, screenHeight - 20, 10, RAYWHITE);
 
-        //ClearBackground(RAYWHITE);
+        ClearBackground(CLITERAL(Color){0, 188, 244});
 
         if (!gameOver)
         {
 
-            //DrawRectangleRec(player.rec, player.color);
-            DrawTexture(player.nave, player.rec.x,player.rec.y,player.color);
+         DrawTexture(player.nave, player.rec.x,player.rec.y,player.color);
+         
+            if (ronda == PRIMERO){
+             DrawText("PRIMER NIVEL", screenWidth/2 - MeasureText("PRIMER NIVEL", 40)/2, screenHeight/2 - 40, 40, Fade(RED, contador));
+         
+              
             
-
-            if (wave == FIRST){
-             DrawText("PRIMER NIVEL", screenWidth/2 - MeasureText("PRIMER NIVEL", 40)/2, screenHeight/2 - 40, 40, Fade(RED, alpha));
+             
              PlaySound(sonido2.nivel2);
             }
-            else if (wave == SECOND ){
+            else if (ronda == SEGUNDO ){
 
             StopSound(sonido1.nivel1);
-            DrawText("SEGUNDO NIVEL", screenWidth/2 - MeasureText("SEGUNDO NIVEL", 40)/2, screenHeight/2 - 40, 40, Fade(BLUE, alpha));
+            DrawText("SEGUNDO NIVEL", screenWidth/2 - MeasureText("SEGUNDO NIVEL", 40)/2, screenHeight/2 - 40, 40, Fade(BLUE, contador));
             PlaySound(sonido3.nivel3);
+           
 
             }
-            else if(wave == THIRD){
+            else if(ronda == TERCERO){
                 StopSound(sonido2.nivel2);
-             DrawText("TERCER NIVEL", screenWidth/2 - MeasureText("TERCER NIVEL", 40)/2, screenHeight/2 - 40, 40, Fade(GREEN, alpha));
+             DrawText("TERCER NIVEL", screenWidth/2 - MeasureText("TERCER NIVEL", 40)/2, screenHeight/2 - 40, 40, Fade(BROWN, contador));
              PlaySound(sonido4.nivel4);
+             
             } 
-            else if (wave == FOURTH){
+            else if (ronda == CUARTO){
             StopSound(sonido3.nivel3);
-            DrawText("CUARTO NIVEL", screenWidth/2 - MeasureText("CUARTO NIVEL", 40)/2, screenHeight/2 - 40, 40, Fade(YELLOW, alpha));
+            DrawText("CUARTO NIVEL", screenWidth/2 - MeasureText("CUARTO NIVEL", 40)/2, screenHeight/2 - 40, 40, Fade(YELLOW, contador));
             PlaySound(sonido5.nivel5);
+           
             
             }
-            else if (wave == FIFTH){
+            else if (ronda == QUINTO){
                 StopSound(sonido4.nivel4);
-                 DrawText("QUINTO NIVEL", screenWidth/2 - MeasureText("QUINTO NIVEL", 40)/2, screenHeight/2 - 40, 40, Fade(VIOLET, alpha));
+                 DrawText("QUINTO NIVEL", screenWidth/2 - MeasureText("QUINTO NIVEL", 40)/2, screenHeight/2 - 40, 40, Fade(VIOLET, contador));
+                 
                  
             }
 
-            for (int i = 0; i < activeEnemies; i++)
+            for (int i = 0; i < EnemigosActivos; i++)
             {
-                if (enemy[i].active) DrawRectangleRec(enemy[i].rec, enemy[i].color);
+                if (enemy[i].active) DrawTexture(enemy[i].enemigo,enemy[i].rec.x,enemy[i].rec.y,enemy->color);;
             }
 
-            for (int i = 0; i < NUM_SHOOTS; i++)
+            for (int i = 0; i < CANTIDAD_DISPAROS; i++)
             {
-                if (shoot[i].active) DrawRectangleRec(shoot[i].rec, shoot[i].color);
+                if (disparo[i].active) DrawRectangleRec(disparo[i].rec, disparo[i].color);
             }
 
             DrawText(TextFormat("%04i", score), 20, 20, 40, GRAY);
@@ -594,9 +616,9 @@ void DrawGame(void)
 
             }
 
-            if (pause) DrawText("PAUSA", screenWidth/2 - MeasureText("PAUSA", 40)/2, screenHeight/2 - 40, 40, GRAY);
+            if (pausa) DrawText("PAUSA", screenWidth/2 - MeasureText("PAUSA", 40)/2, screenHeight/2 - 40, 40, GRAY);
         }
-        else DrawText("PULSA [ENTER] PARA INTENTARLO DE NUEVO", GetScreenWidth()/2 - MeasureText("PULSA [ENTER] PARA INTENTARLO DE NUEVO", 20)/2, GetScreenHeight()/2 - 50, 20, GRAY);
+        else DrawText("PULSA [ENTER] PARA INTENTARLO DE NUEVO", GetScreenWidth()/2 - MeasureText("PULSA [ENTER] PARA INTENTARLO DE NUEVO", 20)/2, GetScreenHeight()/2 - 50, 20, WHITE);
 
     EndDrawing();
 }
@@ -604,20 +626,25 @@ void DrawGame(void)
 // Unload game variables
 void UnloadGame(void)
 {
-    // TODO: Unload all dynamic loaded data (textures, sounds, models...)
+     //carga de arvhivos
    
-   UnloadSound(shoot->sound);
+   UnloadSound(disparo->sound);
    UnloadSound(sonido1.nivel1);
    UnloadSound(sonido2.nivel2);
    UnloadSound(sonido3.nivel3);
    UnloadSound(sonido4.nivel4);
    UnloadSound(sonido5.nivel5);
    UnloadSound(victoria.victoria);
+   UnloadSound(golpe.golpe);
+   //texturas//
    UnloadTexture(player.nave);
-
-   UnloadTexture(fondoa.fondo1);  // Unload background texture
-    UnloadTexture(fondob.fondo2);   // Unload midground texture
+   UnloadTexture(enemy->enemigo);
+//FONDOS
+   UnloadTexture(fondoa.fondo1);  
+    UnloadTexture(fondob.fondo2);   
     UnloadTexture(fondoc.fondo3);
+
+
    
    
 }
