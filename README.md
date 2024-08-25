@@ -5,7 +5,7 @@
 ![Itch.io Badge](https://img.shields.io/badge/Play%20on-Itch.io-blue?link=https://gatorrante.itch.io/nazcainvasors)
 ![Photoshop Badge](https://img.shields.io/badge/Photoshop-yes-purple)
 
-![Screenshot](screenshot.png)
+![Screenshot](https://img.itch.zone/aW1hZ2UvMjkyNTkxMS8xNzUzMTYzNC5wbmc=/original/%2FiECsy.png)
 
 ## About
 
@@ -63,8 +63,7 @@ All sprites and environments are original and created by me using Photoshop and 
   ![Itch.io Badge](https://img.shields.io/badge/Jugar%20en-Itch.io-blue?link=https://gatorrante.itch.io/nazcainvasors)
   ![Photoshop Badge](https://img.shields.io/badge/Photoshop-yes-purple)
 
-  ![Screenshot](screenshot.png)
-
+![Screenshot](https://img.itch.zone/aW1hZ2UvMjkyNTkxMS8xNzUzMTYzNC5wbmc=/original/%2FiECsy.png)
   ## Acerca de
 
   **Nazca Invasors** es mi primer juego desarrollado para la universidad, utilizando C++ y Raylib. Este juego de disparos en horizontal presenta a un Gallito de las Rocas luchando contra alienígenas que invaden las Líneas de Nazca en Perú. El juego utiliza un efecto de paralaje para recrear la atmósfera de las Líneas de Nazca.
