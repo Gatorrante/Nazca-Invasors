@@ -3,10 +3,13 @@
 ![C++ Badge](https://img.shields.io/badge/C%2B%2B-yes-blue)
 ![Raylib Badge](https://img.shields.io/badge/Raylib-yes-orange)
 ![Itch.io Badge](https://img.shields.io/badge/Play%20on-Itch.io-blue?link=https://gatorrante.itch.io/nazcainvasors)
+![Photoshop Badge](https://img.shields.io/badge/Photoshop-yes-purple)
+
 ![Screenshot](screenshot.png)
+
 ## About
 
-**Nazca Invasors** is my first game developed for university, using C++ and Raylib. This horizontal shoot 'em up features a Gallito de las Rocas battling against aliens invading the Nazca Lines in Peru. The game uses a parallax effect to recreate the atmosphere of the Nazca city.
+**Nazca Invasors** is my first game developed for university, using C++ and Raylib. This horizontal shoot 'em up features a Gallito de las Rocas battling against aliens invading the Nazca Lines in Peru. The game uses a parallax effect to recreate the atmosphere of the Nazca Lines.
 
 - **Character:** Gallito de las Rocas
 - **Enemies:** Alien invaders
@@ -43,6 +46,9 @@
 **Terrain:**
 ![Terrain](textures/medio.png)
 
+
+All sprites and environments are original and created by me using Photoshop and drawing skills.
+
 ## Links
 
 - [Play Nazca Invasors on Itch.io](https://gatorrante.itch.io/nazcainvasors)
@@ -55,11 +61,13 @@
   ![C++ Badge](https://img.shields.io/badge/C%2B%2B-yes-blue)
   ![Raylib Badge](https://img.shields.io/badge/Raylib-yes-orange)
   ![Itch.io Badge](https://img.shields.io/badge/Jugar%20en-Itch.io-blue?link=https://gatorrante.itch.io/nazcainvasors)
+  ![Photoshop Badge](https://img.shields.io/badge/Photoshop-yes-purple)
+
   ![Screenshot](screenshot.png)
 
   ## Acerca de
 
-  **Nazca Invasors** es mi primer juego desarrollado para la universidad, utilizando C++ y Raylib. Este juego de disparos en horizontal presenta a un Gallito de las Rocas luchando contra alienígenas que invaden las Líneas de Nazca en Perú. El juego utiliza un efecto de paralaje para recrear la atmósfera de la ciudad de Nazca.
+  **Nazca Invasors** es mi primer juego desarrollado para la universidad, utilizando C++ y Raylib. Este juego de disparos en horizontal presenta a un Gallito de las Rocas luchando contra alienígenas que invaden las Líneas de Nazca en Perú. El juego utiliza un efecto de paralaje para recrear la atmósfera de las Líneas de Nazca.
 
   - **Personaje:** Gallito de las Rocas
   - **Enemigos:** Invasores alienígenas
@@ -95,6 +103,8 @@
 
   **Terreno:**
   ![Terreno](textures/medio.png)
+
+  Todos los sprites y escenarios son originales y creados por mí usando Photoshop y habilidades de dibujo.
 
   ## Enlaces
 
